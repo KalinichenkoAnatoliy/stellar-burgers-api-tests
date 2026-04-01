@@ -1,0 +1,69 @@
+# 📄 .github/workflows/tests.yml
+# Имя воркфлоу — будет отображаться во вкладке Actions
+name: 🧪 API Tests CI
+
+# 🎯 Когда запускать этот воркфлоу
+on:
+  push:
+    branches: [ develop, main ]        # При пуше в эти ветки
+  pull_request:
+    branches: [ develop, main ]        # При создании/обновлении пул-реквеста
+
+# 🔄 Задачи (jobs), которые будут выполнены
+jobs:
+  # Название задачи — можно любое
+  run-api-tests:
+    # 🖥️ На какой операционной системе запускать
+    runs-on: ubuntu-latest
+    
+    # 🐍 Матрица: запустим тесты на нескольких версиях Python
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+    
+    # 📦 Шаги выполнения (выполняются по порядку)
+    steps:
+      # 1️⃣ Клонируем репозиторий
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+      
+      # 2️⃣ Устанавливаем нужную версию Python
+      - name: ⚙️ Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      # 3️⃣ Кэшируем зависимости pip (ускоряет повторные запуски)
+      - name: 📦 Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      # 4️⃣ Устанавливаем зависимости из requirements.txt
+      - name: 📥 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      # 5️⃣ Запускаем тесты с отчётом Allure
+      - name: 🧪 Run API tests with Allure
+        run: |
+          pytest tests/ \
+            --alluredir=allure-results \
+            --tb=short \
+            -v
+        # --alluredir: куда сохранять результаты для Allure
+        # --tb=short: краткий вывод ошибок (удобно читать в логах)
+        # -v: подробный вывод (видим названия тестов)
+      
+      # 6️⃣ Сохраняем результаты Allure как артефакт (опционально)
+      - name: 📤 Upload Allure results
+        if: always()  # Сохраняем даже если тесты упали
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-${{ matrix.python-version }}
+          path: allure-results/
+          retention-days: 7  # Хранить 7 дней
