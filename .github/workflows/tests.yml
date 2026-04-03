@@ -20,7 +20,7 @@ jobs:
     # 🐍 Матрица: запустим тесты на нескольких версиях Python
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.11"]
     
     # 📦 Шаги выполнения (выполняются по порядку)
     steps:
